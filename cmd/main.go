@@ -3,6 +3,7 @@ package main
 import (
     "encoding/json"
     "fmt"
+    "math/rand"
     "net/http"
     "os"
     "path/filepath"
@@ -11,6 +12,13 @@ import (
 )
 
 var currentAlarm alarm.Alarm
+var quotes = []string{
+    "The best way to predict the future is to create it.",
+    "The only way to do great work is to love what you do.",
+    "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+    "Believe you can and you're halfway there.",
+    "The future belongs to those who believe in the beauty of their dreams.",
+}
 
 func setAlarmHandler(w http.ResponseWriter, r *http.Request) {
     var data struct {
@@ -48,6 +56,14 @@ func checkAlarmHandler(w http.ResponseWriter, r *http.Request) {
     }{Trigger: trigger})
 }
 
+func getQuoteHandler(w http.ResponseWriter, r *http.Request) {
+    rand.Seed(time.Now().UnixNano())
+    quote := quotes[rand.Intn(len(quotes))]
+    json.NewEncoder(w).Encode(struct {
+        Quote string `json:"quote"`
+    }{Quote: quote})
+}
+
 func main() {
     ex, err := os.Executable()
     if err != nil {
@@ -59,6 +75,7 @@ func main() {
     http.HandleFunc("/set-alarm", setAlarmHandler)
     http.HandleFunc("/deactivate-alarm", deactivateAlarmHandler)
     http.HandleFunc("/check-alarm", checkAlarmHandler)
+    http.HandleFunc("/get-quote", getQuoteHandler)
 
     fmt.Println("Server starting on port 8080...")
     if err := http.ListenAndServe(":8080", nil); err != nil {

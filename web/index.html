@@ -16,13 +16,14 @@
             height: 100vh;
             margin: 0;
             transition: background-color 0.3s, color 0.3s;
+            overflow: hidden;
         }
         body.dark-theme {
             background-color: #121212;
             color: #fff;
         }
         .alarm-container {
-            background-color: #fff;
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -30,9 +31,10 @@
             max-width: 400px;
             width: 100%;
             transition: background-color 0.3s;
+            z-index: 1;
         }
         body.dark-theme .alarm-container {
-            background-color: #1e1e1e;
+            background-color: rgba(30, 30, 30, 0.8);
         }
         .time-display {
             font-size: 4rem;
@@ -57,6 +59,7 @@
             border-radius: 50%;
             display: none;
             animation: fadeInOut 4s ease-in-out;
+            z-index: 2;
         }
         @keyframes fadeInOut {
             0%, 100% { opacity: 0; }
@@ -107,9 +110,26 @@
         .slider.round:before {
             border-radius: 50%;
         }
+        .quote-container {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            text-align: center;
+            font-size: 1.2rem;
+            font-style: italic;
+            color: #888;
+            z-index: 3;
+            pointer-events: none;
+        }
+        body.dark-theme .quote-container {
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
+    <div class="quote-container" id="quoteContainer"></div>
     <div class="alarm-container">
         <h1 class="mb-4">Alarm Clock</h1>
         <div class="time-display" id="currentTime"></div>
@@ -145,6 +165,7 @@
             const alarmSound = document.getElementById("alarmSound");
             const sticker = document.getElementById("sticker");
             const themeSwitch = document.getElementById("theme-switch");
+            const quoteContainer = document.getElementById("quoteContainer");
             let waterReminderInterval;
 
             function updateTime() {
@@ -152,8 +173,16 @@
                 currentTimeElement.textContent = now.toLocaleTimeString();
             }
 
+            async function fetchQuote() {
+                const response = await fetch("/get-quote");
+                const data = await response.json();
+                quoteContainer.textContent = data.quote;
+            }
+
             setInterval(updateTime, 1000);
             updateTime();
+            fetchQuote();
+            setInterval(fetchQuote, 10000); // Fetch a new quote every 10 seconds
 
             setAlarmButton.addEventListener("click", async () => {
                 const time = alarmTimeInput.value;
