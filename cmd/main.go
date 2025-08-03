@@ -1,14 +1,17 @@
 package main
 
 import (
+    "crypto/rand"
+    "encoding/hex"
     "encoding/json"
     "fmt"
-    "math/rand"
+    mathRand "math/rand"
     "net/http"
     "os"
     "path/filepath"
-    "alarm-clock-go/internal/alarm"
     "time"
+
+    "alarm-clock-go/internal/alarm"
 )
 
 var currentAlarm alarm.Alarm
@@ -18,6 +21,15 @@ var quotes = []string{
     "Success is not final, failure is not fatal: it is the courage to continue that counts.",
     "Believe you can and you're halfway there.",
     "The future belongs to those who believe in the beauty of their dreams.",
+}
+var secret string
+
+func generateSecret() (string, error) {
+    bytes := make([]byte, 16)
+    if _, err := rand.Read(bytes); err != nil {
+        return "", err
+    }
+    return hex.EncodeToString(bytes), nil
 }
 
 func setAlarmHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,12 +49,37 @@ func setAlarmHandler(w http.ResponseWriter, r *http.Request) {
 
     currentAlarm.SetTime(t)
     currentAlarm.Activate()
-    fmt.Fprintf(w, "Alarm set for %s", t.Format("15:04"))
+
+    secret, err = generateSecret()
+    if err != nil {
+        http.Error(w, "Failed to generate secret", http.StatusInternalServerError)
+        return
+    }
+
+    json.NewEncoder(w).Encode(struct {
+        Secret string `json:"secret"`
+    }{Secret: secret})
 }
 
 func deactivateAlarmHandler(w http.ResponseWriter, r *http.Request) {
-    currentAlarm.Deactivate()
-    fmt.Fprint(w, "Alarm deactivated")
+    var data struct {
+        Secret string `json:"secret"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    if data.Secret == secret {
+        currentAlarm.Deactivate()
+        json.NewEncoder(w).Encode(struct {
+            Success bool `json:"success"`
+        }{Success: true})
+    } else {
+        json.NewEncoder(w).Encode(struct {
+            Success bool `json:"success"`
+        }{Success: false})
+    }
 }
 
 func checkAlarmHandler(w http.ResponseWriter, r *http.Request) {
@@ -57,8 +94,8 @@ func checkAlarmHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getQuoteHandler(w http.ResponseWriter, r *http.Request) {
-    rand.Seed(time.Now().UnixNano())
-    quote := quotes[rand.Intn(len(quotes))]
+    mathRand.Seed(time.Now().UnixNano())
+    quote := quotes[mathRand.Intn(len(quotes))]
     json.NewEncoder(w).Encode(struct {
         Quote string `json:"quote"`
     }{Quote: quote})
