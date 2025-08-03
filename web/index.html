@@ -9,11 +9,17 @@
     <style>
         body {
             background-color: #f0f2f5;
+            color: #333;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-theme {
+            background-color: #121212;
+            color: #fff;
         }
         .alarm-container {
             background-color: #fff;
@@ -23,6 +29,10 @@
             text-align: center;
             max-width: 400px;
             width: 100%;
+            transition: background-color 0.3s;
+        }
+        body.dark-theme .alarm-container {
+            background-color: #1e1e1e;
         }
         .time-display {
             font-size: 4rem;
@@ -34,6 +44,68 @@
         }
         .btn {
             margin: 5px;
+        }
+        .sticker {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            background-image: url('https://media.giphy.com/media/3o7TKSjRrfIPjeI4JG/giphy.gif');
+            background-size: cover;
+            border-radius: 50%;
+            display: none;
+            animation: fadeInOut 4s ease-in-out;
+        }
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .theme-switch {
+            display: inline-block;
+            height: 34px;
+            position: relative;
+            width: 60px;
+        }
+        .theme-switch input { display: none; }
+        .slider {
+            background-color: #ccc;
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+        }
+        .slider:before {
+            background-color: #fff;
+            bottom: 4px;
+            content: "";
+            height: 26px;
+            left: 4px;
+            position: absolute;
+            transition: .4s;
+            width: 26px;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -52,8 +124,15 @@
                 Remind me to drink water every 30 minutes
             </label>
         </div>
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="theme-switch">
+                <input type="checkbox" id="theme-switch" />
+                <div class="slider round"></div>
+            </label>
+        </div>
     </div>
 
+    <div class="sticker" id="sticker"></div>
     <audio id="alarmSound" src="/audio/alarm.mp3" preload="auto"></audio>
 
     <script>
@@ -64,6 +143,8 @@
             const deactivateAlarmButton = document.getElementById("deactivateAlarm");
             const waterReminderCheckbox = document.getElementById("waterReminder");
             const alarmSound = document.getElementById("alarmSound");
+            const sticker = document.getElementById("sticker");
+            const themeSwitch = document.getElementById("theme-switch");
             let waterReminderInterval;
 
             function updateTime() {
@@ -90,6 +171,7 @@
                 await fetch("/deactivate-alarm", { method: "POST" });
                 alarmSound.pause();
                 alarmSound.currentTime = 0;
+                sticker.style.display = "none";
                 alert("Alarm deactivated!");
             });
 
@@ -110,8 +192,29 @@
                 const data = await response.json();
                 if (data.trigger) {
                     alarmSound.play();
+                    sticker.style.display = "block";
+                    setTimeout(() => {
+                        sticker.style.display = "none";
+                    }, 4000);
                 }
             }, 1000);
+
+            themeSwitch.addEventListener('change', () => {
+                document.body.classList.toggle('dark-theme');
+                if (document.body.classList.contains('dark-theme')) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+
+            const currentTheme = localStorage.getItem('theme');
+            if (currentTheme) {
+                document.body.classList.add(currentTheme + '-theme');
+                if (currentTheme === 'dark') {
+                    themeSwitch.checked = true;
+                }
+            }
         });
     </script>
 </body>
