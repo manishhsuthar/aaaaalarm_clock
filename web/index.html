@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alarm Clock</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .alarm-container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        .time-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .alarm-controls {
+            margin-top: 20px;
+        }
+        .btn {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="alarm-container">
+        <h1 class="mb-4">Alarm Clock</h1>
+        <div class="time-display" id="currentTime"></div>
+        <input type="time" id="alarmTime" class="form-control mb-3">
+        <div class="alarm-controls">
+            <button id="setAlarm" class="btn btn-primary">Set Alarm</button>
+            <button id="deactivateAlarm" class="btn btn-danger">Deactivate</button>
+        </div>
+        <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="waterReminder">
+            <label class="form-check-label" for="waterReminder">
+                Remind me to drink water every 30 minutes
+            </label>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const currentTimeElement = document.getElementById("currentTime");
+            const alarmTimeInput = document.getElementById("alarmTime");
+            const setAlarmButton = document.getElementById("setAlarm");
+            const deactivateAlarmButton = document.getElementById("deactivateAlarm");
+            const waterReminderCheckbox = document.getElementById("waterReminder");
+            let waterReminderInterval;
+
+            function updateTime() {
+                const now = new Date();
+                currentTimeElement.textContent = now.toLocaleTimeString();
+            }
+
+            setInterval(updateTime, 1000);
+            updateTime();
+
+            setAlarmButton.addEventListener("click", async () => {
+                const time = alarmTimeInput.value;
+                if (time) {
+                    await fetch("/set-alarm", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ time }),
+                    });
+                    alert("Alarm set!");
+                }
+            });
+
+            deactivateAlarmButton.addEventListener("click", async () => {
+                await fetch("/deactivate-alarm", { method: "POST" });
+                alert("Alarm deactivated!");
+            });
+
+            waterReminderCheckbox.addEventListener("change", () => {
+                if (waterReminderCheckbox.checked) {
+                    alert("Water reminder set for every 30 minutes!");
+                    waterReminderInterval = setInterval(() => {
+                        alert("Time to drink some water!");
+                    }, 30 * 60 * 1000); // 30 minutes
+                } else {
+                    clearInterval(waterReminderInterval);
+                    alert("Water reminder stopped.");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
