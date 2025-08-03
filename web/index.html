@@ -54,6 +54,8 @@
         </div>
     </div>
 
+    <audio id="alarmSound" src="/audio/alarm.mp3" preload="auto"></audio>
+
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const currentTimeElement = document.getElementById("currentTime");
@@ -61,6 +63,7 @@
             const setAlarmButton = document.getElementById("setAlarm");
             const deactivateAlarmButton = document.getElementById("deactivateAlarm");
             const waterReminderCheckbox = document.getElementById("waterReminder");
+            const alarmSound = document.getElementById("alarmSound");
             let waterReminderInterval;
 
             function updateTime() {
@@ -85,6 +88,8 @@
 
             deactivateAlarmButton.addEventListener("click", async () => {
                 await fetch("/deactivate-alarm", { method: "POST" });
+                alarmSound.pause();
+                alarmSound.currentTime = 0;
                 alert("Alarm deactivated!");
             });
 
@@ -99,6 +104,14 @@
                     alert("Water reminder stopped.");
                 }
             });
+
+            setInterval(async () => {
+                const response = await fetch("/check-alarm");
+                const data = await response.json();
+                if (data.trigger) {
+                    alarmSound.play();
+                }
+            }, 1000);
         });
     </script>
 </body>

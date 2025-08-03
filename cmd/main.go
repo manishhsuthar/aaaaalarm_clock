@@ -37,6 +37,17 @@ func deactivateAlarmHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, "Alarm deactivated")
 }
 
+func checkAlarmHandler(w http.ResponseWriter, r *http.Request) {
+    trigger := false
+    if currentAlarm.IsActive && time.Now().Hour() == currentAlarm.Time.Hour() && time.Now().Minute() == currentAlarm.Time.Minute() {
+        trigger = true
+    }
+
+    json.NewEncoder(w).Encode(struct {
+        Trigger bool `json:"trigger"`
+    }{Trigger: trigger})
+}
+
 func main() {
     ex, err := os.Executable()
     if err != nil {
@@ -47,6 +58,7 @@ func main() {
     http.Handle("/", http.FileServer(http.Dir(filepath.Join(exPath, "web"))))
     http.HandleFunc("/set-alarm", setAlarmHandler)
     http.HandleFunc("/deactivate-alarm", deactivateAlarmHandler)
+    http.HandleFunc("/check-alarm", checkAlarmHandler)
 
     fmt.Println("Server starting on port 8080...")
     if err := http.ListenAndServe(":8080", nil); err != nil {
