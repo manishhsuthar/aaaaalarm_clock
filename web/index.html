@@ -160,6 +160,7 @@
         <input type="time" id="alarmTime" class="form-control mb-3">
         <div class="alarm-controls">
             <button id="setAlarm" class="btn btn-primary">Set Alarm</button>
+            <button id="deactivateAlarm" class="btn btn-danger">Deactivate Alarm</button>
         </div>
         <div class="form-check mt-3">
             <input class="form-check-input" type="checkbox" id="waterReminder">
@@ -177,10 +178,8 @@
 
     <div id="qrCodeModal">
         <div class="modal-content">
-            <p>Scan the QR code to stop the alarm</p>
+            <p>Scan this QR code with your phone to deactivate the alarm.</p>
             <div id="qrcode"></div>
-            <input type="text" id="qrCodeInput" class="form-control mt-3" placeholder="Enter QR Code Text">
-            <button id="stopAlarm" class="btn btn-success mt-2">Stop Alarm</button>
         </div>
     </div>
 
@@ -199,8 +198,7 @@
             const quoteContainer = document.getElementById("quoteContainer");
             const qrCodeModal = document.getElementById("qrCodeModal");
             const qrcodeContainer = document.getElementById("qrcode");
-            const qrCodeInput = document.getElementById("qrCodeInput");
-            const stopAlarmButton = document.getElementById("stopAlarm");
+            const deactivateAlarmButton = document.getElementById("deactivateAlarm");
             let waterReminderInterval;
             let qrCode;
 
@@ -229,31 +227,15 @@
                         body: JSON.stringify({ time }),
                     });
                     const data = await response.json();
+                    const port = window.location.port || 8080;
+                    const deactivateUrl = `http://${window.location.hostname}:${port}/deactivate?secret=${data.secret}`;
                     if (qrCode) {
                         qrCode.clear();
-                        qrCode.makeCode(data.secret);
+                        qrCode.makeCode(deactivateUrl);
                     } else {
-                        qrCode = new QRCode(qrcodeContainer, data.secret);
+                        qrCode = new QRCode(qrcodeContainer, deactivateUrl);
                     }
                     alert("Alarm set!");
-                }
-            });
-
-            stopAlarmButton.addEventListener("click", async () => {
-                const response = await fetch("/deactivate-alarm", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ secret: qrCodeInput.value }),
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alarmSound.pause();
-                    alarmSound.currentTime = 0;
-                    sticker.style.display = "none";
-                    qrCodeModal.style.display = "none";
-                    alert("Alarm deactivated!");
-                } else {
-                    alert("Incorrect QR code text!");
                 }
             });
 
@@ -266,6 +248,22 @@
                 } else {
                     clearInterval(waterReminderInterval);
                     alert("Water reminder stopped.");
+                }
+            });
+
+            deactivateAlarmButton.addEventListener("click", async () => {
+                const response = await fetch("/deactivate-alarm", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ secret: secret }),
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alarmSound.pause();
+                    alarmSound.currentTime = 0;
+                    sticker.style.display = "none";
+                    qrCodeModal.style.display = "none";
+                    alert("Alarm deactivated!");
                 }
             });
 
